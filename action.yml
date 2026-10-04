@@ -1,4 +1,4 @@
-name: evlog
+name: evlog map
 description: Score the observability of your entry points with evlog map and put the findings on the pull request.
 author: evloghq
 branding:

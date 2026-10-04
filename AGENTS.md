@@ -33,7 +33,7 @@ Renovate keeps two things current: the SHA-pinned actions in the workflows, and 
 
 ## Releasing
 
-Tag `vX.Y.Z` on `main`. `release.yml` moves `vX` to it. Users ride `@v1`. The `version` default in `action.yml` is the `@evlog/cli` release the action was tested with: bumping it is a change to this repository, released with a tag, never implied by a CLI release.
+Tag `vX.Y.Z` on `main`. `release.yml` moves `vX` to it and creates the GitHub Release, which is what the Marketplace listing follows. Users ride `@v1`. The `version` default in `action.yml` is the `@evlog/cli` release the action was tested with: bumping it is a change to this repository, released with a tag, never implied by a CLI release.
 
 ## Git
 
