@@ -10,9 +10,11 @@ inputs:
     description: CLI command to run. Only `map` for now.
     default: map
   version:
-    # The CLI release this action was tested against. A release of the action
-    # moves it; a CLI release on its own never changes what a user's gate sees.
+    # The CLI release this action was tested against. Renovate proposes the
+    # bump; a release of the action ships it. A CLI release on its own never
+    # changes what a user's gate sees.
     description: '`@evlog/cli` version to run, or a full package spec (a pkg.pr.new URL). Defaults to the release this action was tested with; `latest` follows npm.'
+    # renovate: datasource=npm depName=@evlog/cli
     default: 0.8.0
   working-directory:
     description: Directory of the project to scan, relative to the workspace.
@@ -39,7 +41,7 @@ inputs:
     description: Write the report to the job summary.
     default: 'true'
   comment:
-    description: Post one comment on the pull request and keep it updated. Needs `pull-requests write`; skipped when the token cannot write.
+    description: '`true` posts one comment on the pull request and keeps it updated. `on-failure` only posts when the gate failed, and updates an existing comment either way. `false` posts nothing. Needs `pull-requests write`; skipped when the token cannot write.'
     default: 'true'
   comment-key:
     description: Distinguishes comments when the action runs more than once on a pull request.

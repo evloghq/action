@@ -73,6 +73,18 @@ describe('upsertComment', () => {
     assert.deepEqual(outcome, { outcome: 'failed', reason: 'creating comment: 500' })
   })
 
+  it('with create off, updates an existing comment but never starts one', async () => {
+    const none = fakeFetch([{ method: 'GET', url: /comments/, json: [] }])
+    assert.deepEqual(await upsertComment({ event, token: 't', key: 'default', body: 'x', create: false, fetchFn: none.fetchFn }), { outcome: 'skipped', reason: 'gate passed and no comment to update' })
+    assert.equal(none.calls.length, 1)
+
+    const some = fakeFetch([
+      { method: 'GET', url: /comments/, json: [{ id: 3, body: `${marker('default')}\nold` }] },
+      { method: 'PATCH', url: /issues\/comments\/3$/, json: { id: 3 } },
+    ])
+    assert.deepEqual(await upsertComment({ event, token: 't', key: 'default', body: 'x', create: false, fetchFn: some.fetchFn }), { outcome: 'updated', id: 3 })
+  })
+
   it('skips outside a pull request and without a token', async () => {
     assert.deepEqual(await upsertComment({ event: { ...event, pullRequest: undefined }, token: 't', key: 'k', body: 'x' }), { outcome: 'skipped', reason: 'not a pull request' })
     assert.deepEqual(await upsertComment({ event, token: '', key: 'k', body: 'x' }), { outcome: 'skipped', reason: 'no token' })

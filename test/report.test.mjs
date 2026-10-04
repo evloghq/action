@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { grade, prioritize, renderReport } from '../src/lib/report.mjs'
+import { grade, prioritize, renderReport, verdict } from '../src/lib/report.mjs'
 
 const route = (path, { score = 100, checks = {}, sensitivity = 'none', file = 'src/x.ts', line = 1, id = path } = {}) => ({
   id, method: 'GET', path, file, handler: { line }, score, sensitivity: { level: sensitivity, reasons: [] },
@@ -35,16 +35,37 @@ describe('prioritize', () => {
   })
 })
 
+describe('verdict', () => {
+  it('is the score alone without a baseline', () => {
+    assert.equal(verdict([result()]), '**82** good')
+  })
+
+  it('names the movement, the ref and the regressions with a baseline', () => {
+    const r = result({ score: 56, baseline: { delta: -8, regressions: [{}], fixed: [] } })
+    assert.equal(verdict([r], { baselineRef: 'main' }), '**56** needs work · -8 against `main` · 1 regression')
+    const ok = result({ baseline: { delta: 0, regressions: [], fixed: [] } })
+    assert.equal(verdict([ok], { baselineRef: 'main' }), '**82** good · unchanged against `main` · no regression')
+  })
+
+  it('takes the lowest package and counts them', () => {
+    assert.equal(verdict([result(), result({ name: 'apps/api', score: 61 })]), '**61** needs work across 2 packages')
+  })
+
+  it('says when the threshold was missed', () => {
+    assert.equal(verdict([result({ score: 70, reasons: ['below --min-score 80'] })]), '**70** needs work · below min-score 80')
+  })
+})
+
 describe('renderReport', () => {
   it('writes one row per package and no delta column without a baseline', () => {
     const md = renderReport([result(), result({ name: 'apps/api', framework: 'hono', score: 61 })], context)
-    assert.match(md, /^## evlog map/)
+    assert.match(md, /^### <img src="https:\/\/www\.evlog\.dev\/evlog\.svg" height="18" alt=""> evlog map\n\n\*\*61\*\* needs work across 2 packages\n/)
+    assert.match(md, /<sub>\[evloghq\/action\]\(https:\/\/github\.com\/evloghq\/action\) · evlog map v0\.8\.0/)
     assert.match(md, /\| Package \| Score \| Instrumented \| Partial \| Dark \| Gate \|/)
     assert.match(md, /\| `shop` \(nuxt\) \| \*\*82\*\* good \| 3 \| 1 \| 1 \| passed \|/)
     assert.match(md, /\| `apps\/api` \(hono\) \| \*\*61\*\* needs work /)
     assert.doesNotMatch(md, /Δ/)
     assert.doesNotMatch(md, /### Regressions/)
-    assert.match(md, /evlog map v0\.8\.0/)
   })
 
   it('adds the delta column, the regressions and the fixes with a baseline', () => {
@@ -88,6 +109,6 @@ describe('renderReport', () => {
     const md = renderReport([result({ routes: [route('/health', { score: 0, checks: { 'wide-event': 'fail' } })] })], { cliVersion: undefined })
     assert.match(md, /`src\/x\.ts:1`: `wide-event`/)
     assert.doesNotMatch(md, /github\.com\/acme/)
-    assert.match(md, /<sub>evlog map · /)
+    assert.match(md, /· evlog map · \[how/)
   })
 })

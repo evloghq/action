@@ -1,0 +1,29 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "schedule": ["before 3am on Monday"],
+  "timezone": "UTC",
+  "minimumReleaseAge": "2 days",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "The @evlog/cli release pinned as the `version` default in action.yml",
+      "managerFilePatterns": ["/^action\\.yml$/"],
+      "matchStrings": ["# renovate: datasource=npm depName=@evlog/cli\\n\\s+default: (?<currentValue>\\S+)"],
+      "datasourceTemplate": "npm",
+      "depNameTemplate": "@evlog/cli"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Our own release: no waiting period, and it gets its own PR so the bump is a release of the action",
+      "matchDepNames": ["@evlog/cli"],
+      "minimumReleaseAge": null,
+      "commitMessageTopic": "the pinned @evlog/cli",
+      "schedule": ["at any time"]
+    }
+  ]
+}

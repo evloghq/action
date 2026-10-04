@@ -7,6 +7,8 @@
  */
 
 const DOCS = 'https://evlog.dev'
+const LOGO = 'https://www.evlog.dev/evlog.svg'
+const ACTION = 'https://github.com/evloghq/action'
 
 export function grade(score) {
   if (score >= 90) return 'excellent'
@@ -52,12 +54,41 @@ function statusCell(result) {
 }
 
 /**
+ * The one line to read: lowest score, how it moved, what failed.
+ *
+ * `baselineRef` names what the delta is against (`main`); without it the
+ * movement is left out rather than attributed to nothing.
+ */
+export function verdict(results, { baselineRef } = {}) {
+  const score = Math.min(...results.map(result => result.score))
+  const parts = [`**${score}** ${grade(score)}`]
+  if (results.length > 1) parts[0] += ` across ${results.length} packages`
+  const withBaseline = results.filter(result => result.baseline)
+  if (withBaseline.length > 0) {
+    const delta = Math.min(...withBaseline.map(result => result.baseline.delta))
+    const against = baselineRef ? ` against ${code(baselineRef)}` : ''
+    parts.push(delta === 0 ? `unchanged${against}` : `${signed(delta)}${against}`)
+    const regressions = withBaseline.reduce((sum, result) => sum + result.baseline.regressions.length, 0)
+    parts.push(regressions === 0 ? 'no regression' : `${regressions} regression${regressions === 1 ? '' : 's'}`)
+  }
+  const below = results.filter(result => result.reasons.some(reason => reason.startsWith('below')))
+  if (below.length > 0) parts.push(below[0].reasons.find(reason => reason.startsWith('below')).replace('--min-score', 'min-score'))
+  return parts.join(' · ')
+}
+
+/**
  * @param results one entry per package, from `main.mjs`; `name` is how the
  * package is shown, `path` where it sits in the repository, for links
- * @param context repository, sha and server for links; cliVersion for the footer
+ * @param context repository, sha and server for links; cliVersion for the
+ * footer; baselineRef for the verdict
  */
 export function renderReport(results, context) {
-  const lines = ['## evlog map', '']
+  const lines = [
+    `### <img src="${LOGO}" height="18" alt=""> evlog map`,
+    '',
+    verdict(results, context),
+    '',
+  ]
   const hasBaseline = results.some(result => result.baseline)
 
   lines.push(`| Package | Score | ${hasBaseline ? 'Δ | ' : ''}Instrumented | Partial | Dark | Gate |`)
@@ -97,6 +128,6 @@ export function renderReport(results, context) {
     lines.push('', '</details>')
   }
 
-  lines.push('', `<sub>evlog map${context.cliVersion ? ` v${context.cliVersion}` : ''} · [how the score works](${DOCS}/cli/scoring) · [what each check expects](${DOCS}/cli/rules)</sub>`)
+  lines.push('', `<sub>[evloghq/action](${ACTION}) · evlog map${context.cliVersion ? ` v${context.cliVersion}` : ''} · [how the score works](${DOCS}/cli/scoring) · [what each check expects](${DOCS}/cli/rules)</sub>`)
   return lines.join('\n')
 }

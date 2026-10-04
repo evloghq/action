@@ -7,6 +7,7 @@
 
 const COMMANDS = ['map']
 const BASELINE_OFF = ['none', 'false', 'off', '']
+const COMMENT_MODES = { true: 'always', false: 'never', 'on-failure': 'on-failure' }
 
 export class InputError extends Error {}
 
@@ -23,6 +24,12 @@ function integer(name, raw, { min, max }) {
     throw new InputError(`Input \`${name}\` must be a whole number${max === undefined ? ` of ${min} or more` : ` between ${min} and ${max}`}, got "${raw}"`)
   }
   return value
+}
+
+function commentMode(raw) {
+  const mode = COMMENT_MODES[raw.trim().toLowerCase() || 'true']
+  if (!mode) throw new InputError(`Input \`comment\` must be true, false or on-failure, got "${raw}"`)
+  return mode
 }
 
 /** Lines of `packages`, trimmed, comments and blanks dropped. */
@@ -61,7 +68,7 @@ export function readInputs(env = process.env) {
     gate: bool('gate', get('GATE') || 'true'),
     annotations: bool('annotations', get('ANNOTATIONS') || 'true'),
     summary: bool('summary', get('SUMMARY') || 'true'),
-    comment: bool('comment', get('COMMENT') || 'true'),
+    comment: commentMode(get('COMMENT')),
     commentKey: get('COMMENT_KEY').trim() || 'default',
     token: get('TOKEN'),
   }

@@ -27,7 +27,7 @@ jobs:
           working-directory: test/fixtures/nuxt-app
           min-score: 40
           baseline: none
-          comment-key: single
+          comment: on-failure
       - name: Outputs are the fixture's numbers
         env:
           OUTPUTS: ${{ toJSON(steps.map.outputs) }}
@@ -50,7 +50,7 @@ jobs:
             test/fixtures/*
           limit: 3
           baseline: none
-          comment-key: monorepo
+          comment: false
       - name: Every fixture package is scanned, the non-package is not
         env:
           OUTPUTS: ${{ toJSON(steps.map.outputs) }}
@@ -131,7 +131,6 @@ jobs:
         with:
           packages: |
             test/fixtures/*
-          comment-key: baseline
       - name: The base was scanned and compared
         env:
           OUTPUTS: ${{ toJSON(steps.map.outputs) }}

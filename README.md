@@ -44,7 +44,7 @@ The judgment is the CLI's. The action adds no rule of its own, so `npx evlog map
 | `gate` | `true` | `false` reports and sets outputs without failing the step. |
 | `annotations` | `true` | Draw findings on the diff. |
 | `summary` | `true` | Write the report to the job summary. |
-| `comment` | `true` | Post and update the pull request comment. Needs `pull-requests: write`; skipped with a notice when the token cannot write (forks). |
+| `comment` | `true` | `true` posts one comment and keeps it updated; `on-failure` only posts when the gate failed, and updates an existing comment either way; `false` posts nothing. Needs `pull-requests: write`; skipped with a notice when the token cannot write (forks). |
 | `comment-key` | `default` | Keeps separate comments when the action runs more than once on a pull request. |
 | `token` | `${{ github.token }}` | Token for the comment. |
 
@@ -97,6 +97,31 @@ Each action release pins the `@evlog/cli` it was tested with, so `@v1` is determ
 ### Run on pushes too
 
 On a push there is no base to compare against, so `baseline: auto` turns the comparison off and the run reports. Pass `baseline: git:origin/main` to compare against a committed `evlog.map.json` instead.
+
+### Comment only when something is wrong
+
+```yaml
+      - uses: evloghq/action@v1
+        with:
+          comment: on-failure
+```
+
+A clean pull request gets annotations and a job summary, nothing in the conversation. The comment appears when a check regressed or the score missed `min-score`, and it is updated to the passing state once that is fixed rather than left behind.
+
+### Post as your own bot
+
+The comment is posted with the workflow's token, so it shows as `github-actions`. To post as an app of your own (an "evlog" bot with its avatar), mint a token in the workflow and pass it in:
+
+```yaml
+      - uses: actions/create-github-app-token@v2
+        id: app
+        with:
+          app-id: ${{ vars.EVLOG_APP_ID }}
+          private-key: ${{ secrets.EVLOG_APP_KEY }}
+      - uses: evloghq/action@v1
+        with:
+          token: ${{ steps.app.outputs.token }}
+```
 
 ## Frameworks
 

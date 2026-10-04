@@ -27,6 +27,10 @@ test/fixtures/        small apps the workflow scans: nuxt-app, express-app, hono
 - **Every behaviour has a job in `test.yml`.** A new input or output gets a job that exercises it against a fixture and asserts on `steps.map.outputs`. Unit tests cover the modules; the workflow is the proof the composite step works.
 - Code style follows `evloghq/evlog`'s AGENTS.md: no defensive code the surrounding file does not have, no silent fallbacks, comments only for constraints the code cannot express, plain factual prose everywhere.
 
+## Dependencies
+
+Renovate keeps two things current: the SHA-pinned actions in the workflows, and the `@evlog/cli` release pinned as the `version` default in `action.yml` (the `# renovate:` marker above it is what Renovate reads). A CLI bump PR is reviewed like any change, merged, and released with a tag, because it changes what every user's gate sees.
+
 ## Releasing
 
 Tag `vX.Y.Z` on `main`. `release.yml` moves `vX` to it. Users ride `@v1`. The `version` default in `action.yml` is the `@evlog/cli` release the action was tested with: bumping it is a change to this repository, released with a tag, never implied by a CLI release.

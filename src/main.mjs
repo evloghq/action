@@ -83,17 +83,19 @@ async function main() {
     base?.cleanup()
   }
 
-  const report = renderReport(results, { ...event, cliVersion })
+  const outputs = aggregate(results)
+  const baselineRef = baseline.mode === 'base' ? baseline.ref : baseline.mode === 'spec' ? baseline.spec : undefined
+  const report = renderReport(results, { ...event, cliVersion, baselineRef })
   if (inputs.summary && event.summaryFile) appendFileSync(event.summaryFile, `${report}\n`)
 
-  if (inputs.comment && event.pullRequest) {
-    const outcome = await upsertComment({ event, token: inputs.token, key: inputs.commentKey, body: report })
+  if (inputs.comment !== 'never' && event.pullRequest) {
+    const create = inputs.comment === 'always' || !outputs.passed
+    const outcome = await upsertComment({ event, token: inputs.token, key: inputs.commentKey, body: report, create })
     if (outcome.outcome === 'skipped') notice(`pull request comment skipped: ${outcome.reason}`)
     else if (outcome.outcome === 'failed') fail(`pull request comment ${outcome.reason}`)
     else log(`evlog: comment ${outcome.outcome}`)
   }
 
-  const outputs = aggregate(results)
   writeOutputs(outputs, event.outputFile)
 
   if (!outputs.passed && inputs.gate) process.exitCode = 1

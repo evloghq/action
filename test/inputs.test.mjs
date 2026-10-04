@@ -18,7 +18,7 @@ describe('readInputs', () => {
       gate: true,
       annotations: true,
       summary: true,
-      comment: true,
+      comment: 'always',
       commentKey: 'default',
       token: 't',
     })
@@ -41,6 +41,12 @@ describe('readInputs', () => {
       assert.throws(() => readInputs(env({ INPUT_LIMIT: value })), InputError)
     })
   }
+
+  it('reads the comment modes', () => {
+    assert.equal(readInputs(env({ INPUT_COMMENT: 'false' })).comment, 'never')
+    assert.equal(readInputs(env({ INPUT_COMMENT: 'on-failure' })).comment, 'on-failure')
+    assert.throws(() => readInputs(env({ INPUT_COMMENT: 'sometimes' })), /`comment` must be true, false or on-failure/)
+  })
 
   it('rejects a boolean that is neither true nor false', () => {
     assert.throws(() => readInputs(env({ INPUT_GATE: 'yes' })), /`gate` must be true or false/)
