@@ -35,7 +35,7 @@ The judgment is the CLI's. The action adds no rule of its own, so `npx evlog map
 
 | Input | Default | What it does |
 | --- | --- | --- |
-| `version` | `latest` | `@evlog/cli` version to run, or a full spec. Pin it: a release can move a verdict on code nobody touched. |
+| `version` | `0.8.0` | `@evlog/cli` version to run, or a full spec. Defaults to the release this action was tested with; `latest` follows npm. |
 | `working-directory` | `.` | Project to scan, relative to the workspace. |
 | `packages` | | One directory or glob per line (`apps/*`), each scanned as its own package. |
 | `baseline` | `auto` | `auto` scans the pull request base and compares against it. A path or `git:<ref>` is passed to the CLI. `none` disables the comparison. |
@@ -84,15 +84,15 @@ Each package gets its own row in the report and its own annotations, with paths 
 
 The step stays green; `passed` and `results` say what a gate would have done. Set `min-score` to today's score once the team has seen a few reports, then raise it as things get fixed.
 
-### Pin the CLI
+### Which CLI runs
+
+Each action release pins the `@evlog/cli` it was tested with, so `@v1` is deterministic: a CLI release on npm never moves a verdict under your gate. Upgrading the action upgrades the CLI, in a pull request where a moved score is the point. To run ahead of that:
 
 ```yaml
       - uses: evloghq/action@v1
         with:
-          version: 0.8.0
+          version: latest
 ```
-
-`@v1` follows how findings are delivered; the CLI version decides what the findings are. Keep the two apart: ride the action's major, pin the CLI, and upgrade it in its own pull request where a moved score is the point.
 
 ### Run on pushes too
 

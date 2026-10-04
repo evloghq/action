@@ -10,8 +10,10 @@ inputs:
     description: CLI command to run. Only `map` for now.
     default: map
   version:
-    description: '`@evlog/cli` version to run, or a full package spec (a pkg.pr.new URL). Pin it: a release can move a verdict on code nobody touched.'
-    default: latest
+    # The CLI release this action was tested against. A release of the action
+    # moves it; a CLI release on its own never changes what a user's gate sees.
+    description: '`@evlog/cli` version to run, or a full package spec (a pkg.pr.new URL). Defaults to the release this action was tested with; `latest` follows npm.'
+    default: 0.8.0
   working-directory:
     description: Directory of the project to scan, relative to the workspace.
     default: .

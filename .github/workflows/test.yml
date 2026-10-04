@@ -9,11 +9,6 @@ permissions:
   contents: read
   pull-requests: write
 
-env:
-  # `--format github` ships in @evlog/cli 0.8; until it is on npm the preview
-  # build of evloghq/evlog#767 stands in. Switch to `latest` with the release.
-  EVLOG_CLI: https://pkg.pr.new/@evlog/cli@767
-
 jobs:
   unit:
     runs-on: ubuntu-latest
@@ -29,7 +24,6 @@ jobs:
       - id: map
         uses: ./
         with:
-          version: ${{ env.EVLOG_CLI }}
           working-directory: test/fixtures/nuxt-app
           min-score: 40
           baseline: none
@@ -52,7 +46,6 @@ jobs:
       - id: map
         uses: ./
         with:
-          version: ${{ env.EVLOG_CLI }}
           packages: |
             test/fixtures/*
           limit: 3
@@ -74,7 +67,6 @@ jobs:
       - id: map
         uses: ./
         with:
-          version: ${{ env.EVLOG_CLI }}
           working-directory: test/fixtures/nuxt-app
           min-score: 100
           gate: false
@@ -97,7 +89,6 @@ jobs:
         continue-on-error: true
         uses: ./
         with:
-          version: ${{ env.EVLOG_CLI }}
           working-directory: test/fixtures/nuxt-app
           min-score: 100
           comment: false
@@ -119,7 +110,6 @@ jobs:
         continue-on-error: true
         uses: ./
         with:
-          version: ${{ env.EVLOG_CLI }}
           working-directory: test/fixtures/nuxt-app
           min-score: 150
       - name: A bad input fails before anything is scanned
@@ -139,7 +129,6 @@ jobs:
         continue-on-error: true
         uses: ./
         with:
-          version: ${{ env.EVLOG_CLI }}
           packages: |
             test/fixtures/*
           comment-key: baseline

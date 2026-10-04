@@ -29,7 +29,7 @@ test/fixtures/        small apps the workflow scans: nuxt-app, express-app, hono
 
 ## Releasing
 
-Tag `vX.Y.Z` on `main`. `release.yml` moves `vX` to it. Users ride `@v1`; the CLI version is pinned by them via the `version` input and is not tied to this repository's releases.
+Tag `vX.Y.Z` on `main`. `release.yml` moves `vX` to it. Users ride `@v1`. The `version` default in `action.yml` is the `@evlog/cli` release the action was tested with: bumping it is a change to this repository, released with a tag, never implied by a CLI release.
 
 ## Git
 
