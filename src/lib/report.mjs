@@ -7,7 +7,6 @@
  */
 
 const DOCS = 'https://evlog.dev'
-const LOGO = 'https://www.evlog.dev/evlog.svg'
 const ACTION = 'https://github.com/evloghq/action'
 
 export function grade(score) {
@@ -84,7 +83,7 @@ export function verdict(results, { baselineRef } = {}) {
  */
 export function renderReport(results, context) {
   const lines = [
-    `### <img src="${LOGO}" height="18" alt=""> evlog map`,
+    '### Observability score',
     '',
     verdict(results, context),
     '',
@@ -128,6 +127,6 @@ export function renderReport(results, context) {
     lines.push('', '</details>')
   }
 
-  lines.push('', `<sub>[evloghq/action](${ACTION}) · evlog map${context.cliVersion ? ` v${context.cliVersion}` : ''} · [how the score works](${DOCS}/cli/scoring) · [what each check expects](${DOCS}/cli/rules)</sub>`)
+  lines.push('', `<sub>Scored by [evlog map](${DOCS}/cli/map)${context.cliVersion ? ` v${context.cliVersion}` : ''} through [evloghq/action](${ACTION}): a static read of each entry point for the wide event, context and audit trail it should emit. [How the score works](${DOCS}/cli/scoring) · [what each check expects](${DOCS}/cli/rules)</sub>`)
   return lines.join('\n')
 }

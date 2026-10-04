@@ -59,8 +59,9 @@ describe('verdict', () => {
 describe('renderReport', () => {
   it('writes one row per package and no delta column without a baseline', () => {
     const md = renderReport([result(), result({ name: 'apps/api', framework: 'hono', score: 61 })], context)
-    assert.match(md, /^### <img src="https:\/\/www\.evlog\.dev\/evlog\.svg" height="18" alt=""> evlog map\n\n\*\*61\*\* needs work across 2 packages\n/)
-    assert.match(md, /<sub>\[evloghq\/action\]\(https:\/\/github\.com\/evloghq\/action\) · evlog map v0\.8\.0/)
+    assert.match(md, /^### Observability score\n\n\*\*61\*\* needs work across 2 packages\n/)
+    assert.doesNotMatch(md, /<img/)
+    assert.match(md, /<sub>Scored by \[evlog map\]\(https:\/\/evlog\.dev\/cli\/map\) v0\.8\.0 through \[evloghq\/action\]/)
     assert.match(md, /\| Package \| Score \| Instrumented \| Partial \| Dark \| Gate \|/)
     assert.match(md, /\| `shop` \(nuxt\) \| \*\*82\*\* good \| 3 \| 1 \| 1 \| passed \|/)
     assert.match(md, /\| `apps\/api` \(hono\) \| \*\*61\*\* needs work /)
@@ -109,6 +110,6 @@ describe('renderReport', () => {
     const md = renderReport([result({ routes: [route('/health', { score: 0, checks: { 'wide-event': 'fail' } })] })], { cliVersion: undefined })
     assert.match(md, /`src\/x\.ts:1`: `wide-event`/)
     assert.doesNotMatch(md, /github\.com\/acme/)
-    assert.match(md, /· evlog map · \[how/)
+    assert.match(md, /Scored by \[evlog map\]\(https:\/\/evlog\.dev\/cli\/map\) through/)
   })
 })
