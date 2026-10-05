@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  checks: write
   pull-requests: write
 
 jobs:
@@ -27,6 +28,7 @@ jobs:
           working-directory: test/fixtures/nuxt-app
           min-score: 40
           baseline: none
+          annotations: false
           comment: on-failure
       - name: Outputs are the fixture's numbers
         env:
@@ -50,6 +52,7 @@ jobs:
             test/fixtures/*
           limit: 3
           baseline: none
+          annotations: false
           comment: false
       - name: Every fixture package is scanned, the non-package is not
         env:
@@ -70,6 +73,7 @@ jobs:
           working-directory: test/fixtures/nuxt-app
           min-score: 100
           gate: false
+          annotations: false
           comment: false
           baseline: none
       - name: The step stays green and says the gate would have failed
@@ -91,6 +95,7 @@ jobs:
         with:
           working-directory: test/fixtures/nuxt-app
           min-score: 100
+          annotations: false
           comment: false
           baseline: none
       - name: The step failed, and the outputs were still written

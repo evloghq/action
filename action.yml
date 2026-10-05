@@ -2,7 +2,7 @@ name: evlog map
 description: Score the observability of your entry points with evlog map and put the findings on the pull request.
 author: evloghq
 branding:
-  icon: activity
+  icon: bar-chart-2
   color: purple
 
 inputs:
@@ -29,13 +29,13 @@ inputs:
     description: Fail when a package scores below this number (0-100).
     default: ''
   limit:
-    description: Most annotations per package. GitHub keeps ten per level per step and drops the rest.
+    description: Most annotations per package when findings fall back to workflow commands (a token without `checks write`). GitHub keeps ten per level per step and drops the rest.
     default: '10'
   gate:
     description: Fail the step when a package regresses or scores below `min-score`. `false` reports and sets outputs without failing.
     default: 'true'
   annotations:
-    description: Draw each finding on the pull request diff.
+    description: Draw each finding on the pull request diff, through a check run named `evlog map`. Needs `checks write`; falls back to workflow commands when the token cannot write.
     default: 'true'
   summary:
     description: Write the report to the job summary.
@@ -47,7 +47,7 @@ inputs:
     description: Distinguishes comments when the action runs more than once on a pull request.
     default: default
   token:
-    description: Token for the pull request comment. Defaults to the workflow token.
+    description: Token for the check run and the pull request comment. Defaults to the workflow token.
     default: ${{ github.token }}
 
 outputs:

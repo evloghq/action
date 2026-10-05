@@ -29,17 +29,12 @@ export function checkoutBase({ workspace, ref, log }) {
 }
 
 /**
- * The CLI names a baseline the way it was spelled on the command line. Ours is
- * a temp file nobody typed, so the ref it stands for goes in its place.
- */
-export function relabelBaseline(text, file, ref) {
-  return file ? text.split(file).join(ref) : text
-}
-
-/**
  * Scan one package at the base and write its map to a file the CLI can take
  * as `--baseline`. A package that does not exist at the base is new and has
  * nothing to regress from.
+ *
+ * The map itself comes back too: the report needs the base's score per entry
+ * point, which the CLI's comparison does not carry.
  */
 export function baselineFor({ base, packageDir, version, env }) {
   const packageRel = toPosix(relative(base.root, packageDir))
@@ -50,5 +45,5 @@ export function baselineFor({ base, packageDir, version, env }) {
   const { map } = JSON.parse(stdout)
   const file = join(base.dir, `.evlog-baseline-${packageRel.replace(/[^\w.-]+/g, '_') || 'root'}.json`)
   writeFileSync(file, JSON.stringify(map))
-  return file
+  return { file, map }
 }
