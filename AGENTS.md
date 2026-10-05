@@ -12,7 +12,7 @@ npm run check     # syntax check every module
 ```
 action.yml            inputs, outputs, the one composite step
 src/main.mjs          the run: inputs → packages → baseline → scan → report → comment → outputs → gate
-src/lib/              one module per concern (inputs, event, packages, cli, baseline, report, comment, outputs)
+src/lib/              one module per concern (inputs, event, packages, cli, baseline, findings, report, checks, comment, github, outputs)
 test/*.test.mjs       unit tests, one file per module
 test/fixtures/        small apps the workflow scans: nuxt-app, express-app, hono-app, and a non-package
 .github/workflows/    test.yml runs the action against the fixtures on every push and PR; release.yml moves the major tag
@@ -20,7 +20,7 @@ test/fixtures/        small apps the workflow scans: nuxt-app, express-app, hono
 
 ## Rules
 
-- **The CLI decides, the action delivers.** No rule, threshold, or scoring lives here. If a verdict is wrong, fix `@evlog/cli` in `evloghq/evlog`. The one exception is `prioritize` in `report.mjs`, which mirrors the CLI's FIX FIRST order for display; keep it identical.
+- **The CLI decides, the action delivers.** No rule, threshold, or scoring lives here. If a verdict is wrong, fix `@evlog/cli` in `evloghq/evlog`. The two exceptions mirror the CLI for display and are kept identical to it: `prioritize` in `report.mjs` (the FIX FIRST order) and `findings` in `findings.mjs` (what `--format github` would point at, built from the JSON so one list can feed the Checks API and the workflow-command fallback).
 - **No dependencies.** Node 20 is what the runner has; `fetch`, `node:test`, `spawnSync` cover everything. A dependency would need a bundle and a `dist/` commit, which is the maintenance this design avoids.
 - **Every input is validated in `inputs.mjs`** and nowhere else. A bad input exits 2 before any scan.
 - **Degrade, don't throw, on permissions.** A token that cannot comment is a notice, not a failure; annotations and the summary still stand.

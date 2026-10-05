@@ -1,12 +1,13 @@
 # evlog action
 
-Scores the observability of your entry points with [`evlog map`](https://evlog.dev/cli/map) and puts the findings where the review happens: on the pull request diff, in the job summary, and in one comment that stays up to date.
+Scores the observability of your entry points with [`evlog map`](https://evlog.dev/cli/map) and puts the findings where the review happens: a check run with annotations on the diff, a job summary, and one comment that stays up to date.
 
 ```yaml
 name: observability
 on: pull_request
 permissions:
   contents: read
+  checks: write
   pull-requests: write
 jobs:
   map:
@@ -18,16 +19,17 @@ jobs:
           min-score: 80
 ```
 
-That is the whole setup. On a pull request the action scans the base branch too, so a check that used to pass and no longer does fails the job and is drawn on the line that broke it. Nothing has to be committed, no token has to be created: the comment uses the workflow's own token.
+That is the whole setup. On a pull request the action scans the base branch too, so a check that used to pass and no longer does fails the job, is named in the comment with the score it cost, and is drawn on the entry point that lost it. Nothing has to be committed, no token has to be created: the check run and the comment use the workflow's own token.
 
 ## What it does
 
 1. Runs `evlog map` on each package with the pinned `@evlog/cli`.
-2. On a pull request, checks the base out next to the workspace, scans it, and compares. Regressions become `::error` annotations on the diff; without a base, the report's FIX FIRST list becomes `::warning` annotations, capped at `limit`.
-3. Writes the report to the job summary: one table across packages, regressions, what to fix first, what got fixed.
-4. Posts that report as a pull request comment and edits it on every run.
-5. Sets outputs (`score`, `delta`, `regressions`, `passed`, `results`) for whatever comes next.
-6. Fails the step when a package regressed or scored under `min-score`, unless `gate: false`.
+2. On a pull request, checks the base out next to the workspace, scans it, and compares.
+3. Creates a check run named `evlog map` on the commit, with the report as its summary and one annotation per finding: regressions, as failures, when there is a base; the report's FIX FIRST list, as warnings, when there is not. Without `checks: write` the same findings go out as workflow commands, capped at `limit` per package.
+4. Writes the report to the job summary, with every entry point and the result of each check per package.
+5. Posts the report as a pull request comment and edits it on every run: the score in the title, what moved in a GitHub alert block, the table only for a monorepo, and a `min-score` to adopt when none is set.
+6. Sets outputs (`score`, `delta`, `regressions`, `passed`, `results`) for whatever comes next.
+7. Fails the step when a package regressed or scored under `min-score`, unless `gate: false`.
 
 The judgment is the CLI's. The action adds no rule of its own, so `npx evlog map` on your machine and the action on your pull request agree.
 
@@ -40,13 +42,13 @@ The judgment is the CLI's. The action adds no rule of its own, so `npx evlog map
 | `packages` | | One directory or glob per line (`apps/*`), each scanned as its own package. |
 | `baseline` | `auto` | `auto` scans the pull request base and compares against it. A path or `git:<ref>` is passed to the CLI. `none` disables the comparison. |
 | `min-score` | | Fail when a package scores below this number. |
-| `limit` | `10` | Most annotations per package; GitHub keeps ten per level per step. |
+| `limit` | `10` | Most annotations per package when findings fall back to workflow commands; GitHub keeps ten per level per step. A check run has no cap. |
 | `gate` | `true` | `false` reports and sets outputs without failing the step. |
-| `annotations` | `true` | Draw findings on the diff. |
+| `annotations` | `true` | Draw findings on the diff through a check run named `evlog map`. Needs `checks: write`; falls back to workflow commands without it. |
 | `summary` | `true` | Write the report to the job summary. |
 | `comment` | `true` | `true` posts one comment and keeps it updated; `on-failure` only posts when the gate failed, and updates an existing comment either way; `false` posts nothing. Needs `pull-requests: write`; skipped with a notice when the token cannot write (forks). |
 | `comment-key` | `default` | Keeps separate comments when the action runs more than once on a pull request. |
-| `token` | `${{ github.token }}` | Token for the comment. |
+| `token` | `${{ github.token }}` | Token for the check run and the comment. |
 
 ## Outputs
 
@@ -129,4 +131,6 @@ Everything `evlog map` scans: Nuxt, Nitro, Next.js App Router, TanStack Start, H
 
 ## Permissions
 
-`contents: read` to check out. `pull-requests: write` only for the comment; without it the action says so in a notice and everything else still works. Pull requests from forks get a read-only token, so they get annotations and a summary but no comment.
+`contents: read` to check out. `checks: write` for the check run and `pull-requests: write` for the comment; without either the action says so in a notice and everything else still works. Pull requests from forks get a read-only token, so they get annotations as workflow commands and a summary, but no check run and no comment.
+
+GitHub's current pull request diff folds annotations into the alerts counter at the top of the page rather than drawing them on the hunk; the Checks tab and the old diff experience draw them inline. The comment names the entry point either way.

@@ -1,3 +1,5 @@
+import { request } from './github.mjs'
+
 /**
  * One comment per pull request, edited in place on every run.
  *
@@ -6,20 +8,6 @@
  */
 export function marker(key) {
   return `<!-- evlog-action:${key} -->`
-}
-
-async function request(fetchFn, url, token, init = {}) {
-  const response = await fetchFn(url, {
-    ...init,
-    headers: {
-      'accept': 'application/vnd.github+json',
-      'authorization': `Bearer ${token}`,
-      'content-type': 'application/json',
-      'x-github-api-version': '2022-11-28',
-      ...init.headers,
-    },
-  })
-  return response
 }
 
 /**
