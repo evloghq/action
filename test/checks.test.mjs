@@ -52,6 +52,18 @@ describe('createCheckRun', () => {
     assert.match(outcome.reason, /checks: write/)
   })
 
+  it('reports a request that never got an answer, so the findings can fall back', async () => {
+    const down = async () => { throw new TypeError('fetch failed') }
+    assert.deepEqual(await createCheckRun({ ...run, annotations: [], fetchFn: down }), { outcome: 'failed', reason: 'creating check run: fetch failed' })
+    let calls = 0
+    const flaky = async (url, init) => {
+      calls += 1
+      if (calls === 1) return { ok: true, status: 201, json: async () => ({ id: 5, html_url: 'u' }) }
+      throw new TypeError('fetch failed')
+    }
+    assert.deepEqual(await createCheckRun({ ...run, annotations: Array.from({ length: 60 }, (_, i) => finding(i + 1)), fetchFn: flaky }), { outcome: 'failed', reason: 'adding annotations to check run: fetch failed' })
+  })
+
   it('reports any other API failure, and skips without a token', async () => {
     const { fetchFn } = fakeFetch([{ method: 'POST', url: /check-runs$/, status: 422, json: {} }])
     assert.deepEqual(await createCheckRun({ ...run, annotations: [], fetchFn }), { outcome: 'failed', reason: 'creating check run: 422' })

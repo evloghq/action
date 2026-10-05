@@ -13,7 +13,7 @@ const BATCH = 50
  * check run has no cap, is listed on the pull request under its own name with
  * the report as its summary, and its annotations are what the diff view and
  * the Checks tab draw. The token needs `checks: write`; when it cannot write,
- * the caller prints workflow commands instead.
+ * or the API cannot be reached, the caller prints workflow commands instead.
  */
 export async function createCheckRun({ event, token, name, headSha, conclusion, title, summary, annotations, fetchFn = fetch }) {
   if (!token) return { outcome: 'skipped', reason: 'no token' }
@@ -22,10 +22,15 @@ export async function createCheckRun({ event, token, name, headSha, conclusion, 
   for (let i = 0; i < annotations.length; i += BATCH) batches.push(annotations.slice(i, i + BATCH).map(toApi))
   const [first = [], ...rest] = batches
 
-  const created = await request(fetchFn, url, token, {
-    method: 'POST',
-    body: JSON.stringify({ name, head_sha: headSha, status: 'completed', conclusion, output: { title, summary, annotations: first } }),
-  })
+  let created
+  try {
+    created = await request(fetchFn, url, token, {
+      method: 'POST',
+      body: JSON.stringify({ name, head_sha: headSha, status: 'completed', conclusion, output: { title, summary, annotations: first } }),
+    })
+  } catch (error) {
+    return { outcome: 'failed', reason: `creating check run: ${error.message}` }
+  }
   if (created.status === 401 || created.status === 403) {
     return { outcome: 'skipped', reason: 'token cannot write check runs; grant `checks: write` to draw findings on the diff' }
   }
@@ -33,10 +38,15 @@ export async function createCheckRun({ event, token, name, headSha, conclusion, 
   const { id, html_url: htmlUrl } = await created.json()
 
   for (const batch of rest) {
-    const updated = await request(fetchFn, `${url}/${id}`, token, {
-      method: 'PATCH',
-      body: JSON.stringify({ output: { title, summary, annotations: batch } }),
-    })
+    let updated
+    try {
+      updated = await request(fetchFn, `${url}/${id}`, token, {
+        method: 'PATCH',
+        body: JSON.stringify({ output: { title, summary, annotations: batch } }),
+      })
+    } catch (error) {
+      return { outcome: 'failed', reason: `adding annotations to check run: ${error.message}` }
+    }
     if (!updated.ok) return { outcome: 'failed', reason: `adding annotations to check run: ${updated.status}` }
   }
   return { outcome: 'created', id, url: htmlUrl, annotations: annotations.length }
