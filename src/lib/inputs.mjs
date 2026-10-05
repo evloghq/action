@@ -65,6 +65,7 @@ export function readInputs(env = process.env) {
     baseline: get('BASELINE').trim() || 'auto',
     minScore: minScoreRaw === '' ? undefined : integer('min-score', minScoreRaw, { min: 0, max: 100 }),
     limit: integer('limit', get('LIMIT').trim() || '10', { min: 1 }),
+    telemetry: bool('telemetry', get('TELEMETRY') || 'true'),
     gate: bool('gate', get('GATE') || 'true'),
     annotations: bool('annotations', get('ANNOTATIONS') || 'true'),
     summary: bool('summary', get('SUMMARY') || 'true'),

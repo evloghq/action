@@ -48,6 +48,7 @@ The judgment is the CLI's. The action adds no rule of its own, so `npx evlog map
 | `summary` | `true` | Write the report to the job summary. |
 | `comment` | `true` | `true` posts one comment and keeps it updated; `on-failure` only posts when the gate failed, and updates an existing comment either way; `false` posts nothing. Needs `pull-requests: write`; skipped with a notice when the token cannot write (forks). |
 | `comment-key` | `default` | Keeps separate comments when the action runs more than once on a pull request. |
+| `telemetry` | `true` | Send action health and scan counters. `false` disables telemetry for both the action and its CLI scans. |
 | `token` | `${{ github.token }}` | Token for the check run and the comment. |
 
 ## Outputs
@@ -134,3 +135,24 @@ Everything `evlog map` scans: Nuxt, Nitro, Next.js App Router, TanStack Start, H
 `contents: read` to check out. `checks: write` for the check run and `pull-requests: write` for the comment; without either the action says so in a notice and everything else still works. Pull requests from forks get a read-only token, so they get annotations as workflow commands and a summary, but no check run and no comment.
 
 GitHub's current pull request diff folds annotations into the alerts counter at the top of the page rather than drawing them on the hunk; the Checks tab and the old diff experience draw them inline. The comment names the entry point either way.
+
+
+## Disable or redirect telemetry
+
+The action emits one `evlog-action` event with duration, execution outcome, aggregate scan counts, gate result, and check/comment delivery outcomes. Its CLI scans also emit their own `evlog-cli` events with scan-specific counters. A gate that rejects a scan is recorded as `gatePassed: false`, not an action execution error.
+
+Set `telemetry: false` to disable both:
+
+```yaml
+      - uses: evloghq/action@v1
+        with:
+          telemetry: false
+```
+
+Both also honour `DO_NOT_TRACK=1` and `EVLOG_TELEMETRY=0` from the workflow environment. `DO_NOT_TRACK` takes precedence over `EVLOG_TELEMETRY=1`. Leaving the input enabled never overrides either opt-out.
+
+Events go to `https://telemetry.evlog.cloud/api/telemetry/ingest`. Set `EVLOG_TELEMETRY_ENDPOINT` to redirect both the action and CLI events to an endpoint that accepts the `@evlog/telemetry` ingest format.
+
+The action payload includes the action revision and triggering event type. It does not include repository names, run IDs, SHAs, package names, file paths, source, tokens, or raw error messages. Custom string fields use fixed allowlists. The SDK also attaches runtime information and an anonymous machine identifier.
+
+When enabled, the action installs a pinned `@evlog/telemetry` release in a temporary runner directory with package scripts disabled. Installation has a 15-second timeout. A telemetry installation or recording failure prints a notice and leaves the scan result unchanged. Delivery is best effort: the SDK buffers undelivered events on disk, but an ephemeral runner does not preserve them for another job.

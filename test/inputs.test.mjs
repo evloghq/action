@@ -15,6 +15,7 @@ describe('readInputs', () => {
       baseline: 'auto',
       minScore: undefined,
       limit: 10,
+      telemetry: true,
       gate: true,
       annotations: true,
       summary: true,
@@ -46,6 +47,11 @@ describe('readInputs', () => {
     assert.equal(readInputs(env({ INPUT_COMMENT: 'false' })).comment, 'never')
     assert.equal(readInputs(env({ INPUT_COMMENT: 'on-failure' })).comment, 'on-failure')
     assert.throws(() => readInputs(env({ INPUT_COMMENT: 'sometimes' })), /`comment` must be true, false or on-failure/)
+  })
+
+  it('reads and validates the telemetry opt-out', () => {
+    assert.equal(readInputs(env({ INPUT_TELEMETRY: 'false' })).telemetry, false)
+    assert.throws(() => readInputs(env({ INPUT_TELEMETRY: 'yes' })), /`telemetry` must be true or false/)
   })
 
   it('rejects a boolean that is neither true nor false', () => {

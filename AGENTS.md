@@ -1,6 +1,6 @@
 # evlog action
 
-GitHub Action for `evlog map`. Composite action, plain Node, no dependencies, no build step.
+GitHub Action for `evlog map`. Composite action, plain Node, no build step. The telemetry SDK is installed separately on the runner.
 
 ```bash
 npm test          # unit tests, node:test
@@ -21,7 +21,8 @@ test/fixtures/        small apps the workflow scans: nuxt-app, express-app, hono
 ## Rules
 
 - **The CLI decides, the action delivers.** No rule, threshold, or scoring lives here. If a verdict is wrong, fix `@evlog/cli` in `evloghq/evlog`. The two exceptions mirror the CLI for display and are kept identical to it: `prioritize` in `report.mjs` (the FIX FIRST order) and `findings` in `findings.mjs` (what `--format github` would point at, built from the JSON so one list can feed the Checks API and the workflow-command fallback).
-- **No dependencies.** Node 20 is what the runner has; `fetch`, `node:test`, `spawnSync` cover everything. A dependency would need a bundle and a `dist/` commit, which is the maintenance this design avoids.
+- **No bundled dependencies.** Node 20 provides the action runtime. The exception is the pinned `@evlog/telemetry` SDK, installed in an isolated runner directory with package scripts disabled. Keep its pin under Renovate and never install it into the scanned workspace.
+- **Telemetry opt-outs apply to both layers.** `telemetry: false` sets `EVLOG_TELEMETRY=0` before CLI subprocesses run. Otherwise preserve CLI telemetry and honour `DO_NOT_TRACK=1` and `EVLOG_TELEMETRY=0`. Keep action fields in sync with the dashboard ingest allowlist in `evloghq/evlog`.
 - **Every input is validated in `inputs.mjs`** and nowhere else. A bad input exits 2 before any scan.
 - **Degrade, don't throw, on permissions.** A token that cannot comment is a notice, not a failure; annotations and the summary still stand.
 - **Every behaviour has a job in `test.yml`.** A new input or output gets a job that exercises it against a fixture and asserts on `steps.map.outputs`. Unit tests cover the modules; the workflow is the proof the composite step works.

@@ -46,6 +46,9 @@ inputs:
   comment-key:
     description: Distinguishes comments when the action runs more than once on a pull request.
     default: default
+  telemetry:
+    description: Send action and CLI telemetry. No repository names, source, paths or tokens. Also disabled by DO_NOT_TRACK=1 or EVLOG_TELEMETRY=0.
+    default: 'true'
   token:
     description: Token for the check run and the pull request comment. Defaults to the workflow token.
     default: ${{ github.token }}
@@ -96,3 +99,5 @@ runs:
         INPUT_COMMENT: ${{ inputs.comment }}
         INPUT_COMMENT_KEY: ${{ inputs.comment-key }}
         INPUT_TOKEN: ${{ inputs.token }}
+        INPUT_TELEMETRY: ${{ inputs.telemetry }}
+        GITHUB_ACTION_REF: ${{ github.action_ref }}

@@ -15,6 +15,18 @@
       "matchStrings": ["# renovate: datasource=npm depName=@evlog/cli\\n\\s+default: (?<currentValue>\\S+)"],
       "datasourceTemplate": "npm",
       "depNameTemplate": "@evlog/cli"
+    },
+    {
+      "customType": "regex",
+      "description": "The telemetry SDK installed on the runner",
+      "managerFilePatterns": [
+        "/^src/lib/telemetry\\.mjs$/"
+      ],
+      "matchStrings": [
+        "// renovate: datasource=npm depName=@evlog/telemetry\\nconst TELEMETRY_VERSION = '(?<currentValue>[^']+)'"
+      ],
+      "datasourceTemplate": "npm",
+      "depNameTemplate": "@evlog/telemetry"
     }
   ],
   "packageRules": [

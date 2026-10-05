@@ -9,6 +9,7 @@ import { findings, workflowCommand } from './lib/findings.mjs'
 import { InputError, readInputs, resolveBaseline } from './lib/inputs.mjs'
 import { expandPackages, isPackage, toPosix } from './lib/packages.mjs'
 import { aggregate, writeOutputs } from './lib/outputs.mjs'
+import { runWithTelemetry, scanFields } from './lib/telemetry.mjs'
 import { packageLine, plain, renderReport, renderSummary, verdict } from './lib/report.mjs'
 
 const CHECK_NAME = 'evlog map'
@@ -41,8 +42,7 @@ function printWorkflowCommands(results, inputs, baselineRef) {
   }
 }
 
-async function main() {
-  const inputs = readInputs()
+async function main(inputs, telemetry) {
   const event = readEvent()
   const spec = packageSpec(inputs.version)
   const root = resolve(event.workspace, inputs.workingDirectory)
@@ -55,6 +55,7 @@ async function main() {
   log(`evlog: ${packages.length} package${packages.length === 1 ? '' : 's'} · ${spec}`)
 
   const baseline = resolveBaseline(inputs.baseline, event)
+  telemetry?.set({ packages: packages.length, baselineMode: baseline.mode })
   const base = baseline.mode === 'base' ? checkoutBase({ workspace: root, ref: baseline.ref, log }) : undefined
   const baselineRef = baseline.mode === 'base' ? baseline.ref : baseline.mode === 'spec' ? baseline.spec : undefined
 
@@ -98,6 +99,8 @@ async function main() {
   }
 
   const outputs = aggregate(results)
+  telemetry?.set(scanFields(outputs))
+  telemetry?.set({ checkOutcome: 'disabled', commentOutcome: 'disabled' })
   const context = { ...event, cliVersion, baselineRef, minScore: inputs.minScore, gate: inputs.gate }
   const report = renderReport(results, context)
   if (inputs.summary && event.summaryFile) appendFileSync(event.summaryFile, `${renderSummary(results, context)}\n`)
@@ -113,6 +116,7 @@ async function main() {
       summary: report,
       annotations: results.flatMap(result => findings(result, { baselineRef })),
     })
+    telemetry?.set({ checkOutcome: outcome.outcome })
     if (outcome.outcome === 'created') log(`evlog: check run ${outcome.url} · ${outcome.annotations} annotation${outcome.annotations === 1 ? '' : 's'}`)
     else {
       if (outcome.outcome === 'failed') fail(`check run ${outcome.reason}`)
@@ -124,6 +128,7 @@ async function main() {
   if (inputs.comment !== 'never' && event.pullRequest) {
     const create = inputs.comment === 'always' || !outputs.passed
     const outcome = await upsertComment({ event, token: inputs.token, key: inputs.commentKey, body: report, create })
+    telemetry?.set({ commentOutcome: outcome.outcome })
     if (outcome.outcome === 'skipped') notice(`pull request comment skipped: ${outcome.reason}`)
     else if (outcome.outcome === 'failed') fail(`pull request comment ${outcome.reason}`)
     else log(`evlog: comment ${outcome.outcome}`)
@@ -134,7 +139,11 @@ async function main() {
   if (!outputs.passed && inputs.gate) process.exitCode = 1
 }
 
-main().catch((error) => {
+Promise.resolve().then(() => {
+  const inputs = readInputs()
+  if (!inputs.telemetry) process.env.EVLOG_TELEMETRY = '0'
+  return runWithTelemetry(inputs, telemetry => main(inputs, telemetry), { notice })
+}).catch((error) => {
   fail(error instanceof InputError ? error.message : `${error.message}`)
   process.exitCode = error instanceof InputError ? 2 : 1
 })
