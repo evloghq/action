@@ -3,11 +3,12 @@ import { execFile } from 'node:child_process'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
-import { resolve, join } from 'node:path'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
 const exec = promisify(execFile)
-const root = resolve(import.meta.dirname, '..')
+const root = fileURLToPath(new URL('../', import.meta.url))
 const directory = await mkdtemp(join(tmpdir(), 'evlog-action-integration-'))
 const batches = []
 const server = createServer(async (request, response) => {
