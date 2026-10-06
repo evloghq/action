@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { COLLECT_FIELDS, runWithTelemetry, scanFields } from '../src/lib/telemetry.mjs'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { COLLECT_FIELDS, resolveVersion, runWithTelemetry, scanFields } from '../src/lib/telemetry.mjs'
 
 function setup({ runError, setupError, afterError, cleanupError } = {}) {
   const calls = { notices: [], cleaned: 0, loaded: 0, options: undefined, runs: [], sets: [] }
@@ -145,6 +148,41 @@ describe('runWithTelemetry', () => {
     const error = new Error('something broke')
     await assert.rejects(runWithTelemetry(inputs, async () => { throw error }, options), actual => actual === error)
     assert.deepEqual(calls.sets, [{ errorStage: 'unknown' }])
+  })
+})
+
+describe('resolveVersion', () => {
+  it('prefers GITHUB_ACTION_REF', () => {
+    assert.equal(resolveVersion({ GITHUB_ACTION_REF: 'v1' }), 'v1')
+  })
+
+  it('falls back to the package.json the runner checked out at GITHUB_ACTION_PATH', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'evlog-action-'))
+    await writeFile(join(directory, 'package.json'), JSON.stringify({ name: '@evlog/action', version: '1.3.0' }))
+    try {
+      assert.equal(resolveVersion({ GITHUB_ACTION_PATH: directory }), '1.3.0')
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('ignores a package.json without a version', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'evlog-action-'))
+    await writeFile(join(directory, 'package.json'), JSON.stringify({ name: '@evlog/action' }))
+    try {
+      assert.equal(resolveVersion({ GITHUB_ACTION_PATH: directory }), 'local')
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('reports local when neither the ref nor the checkout is available', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'evlog-action-'))
+    try {
+      assert.equal(resolveVersion({ GITHUB_ACTION_PATH: directory }), 'local')
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
   })
 })
 

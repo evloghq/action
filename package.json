@@ -2,6 +2,7 @@
   "name": "@evlog/action",
   "private": true,
   "type": "module",
+  "version": "1.3.0",
   "description": "GitHub Action for evlog: score the observability of your entry points and put the findings on the pull request.",
   "repository": "github:evloghq/action",
   "license": "MIT",

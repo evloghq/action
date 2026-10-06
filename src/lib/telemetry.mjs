@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -15,6 +16,16 @@ export const COLLECT_FIELDS = {
   checkOutcome: ['disabled', 'created', 'skipped', 'failed'],
   commentOutcome: ['disabled', 'created', 'updated', 'skipped', 'failed'],
   errorStage: ['inputs', 'baseline', 'cli', 'check', 'comment', 'unknown'],
+}
+
+/** The runner leaves GITHUB_ACTION_REF empty for composite actions; the action itself is checked out at the pinned ref. */
+export function resolveVersion(env) {
+  if (env.GITHUB_ACTION_REF) return env.GITHUB_ACTION_REF
+  try {
+    const { version } = JSON.parse(readFileSync(join(env.GITHUB_ACTION_PATH ?? '', 'package.json')))
+    if (version) return version
+  } catch {}
+  return 'local'
 }
 
 /** Install the pinned SDK outside the workspace, without package scripts. */
@@ -63,7 +74,7 @@ export async function runWithTelemetry(inputs, work, {
     loaded = await load(env)
     handle = loaded.sdk.createGitHubActionsTelemetry({
       name: 'evlog-action',
-      version: env.GITHUB_ACTION_REF || 'local',
+      version: resolveVersion(env),
       environment: 'production',
       actionName: 'evloghq/action',
       endpoint: ENDPOINT,
