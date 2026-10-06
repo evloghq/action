@@ -14,6 +14,7 @@ export const COLLECT_FIELDS = {
   baselineMode: ['none', 'base', 'spec'],
   checkOutcome: ['disabled', 'created', 'skipped', 'failed'],
   commentOutcome: ['disabled', 'created', 'updated', 'skipped', 'failed'],
+  errorStage: ['inputs', 'baseline', 'cli', 'check', 'comment', 'unknown'],
 }
 
 /** Install the pinned SDK outside the workspace, without package scripts. */
@@ -80,10 +81,12 @@ export async function runWithTelemetry(inputs, work, {
   try {
     await handle.run('map', async () => {
       started = true
+      const telemetry = loaded.sdk.telemetry
       try {
-        value = await work(loaded.sdk.telemetry)
+        value = await work(telemetry)
       } catch (error) {
         workError = error
+        telemetry?.set?.({ errorStage: workError?.stage ?? 'unknown' })
         throw Object.assign(new Error('Action execution failed'), { code: 'ACTION_EXECUTION_FAILED' })
       }
     }, {

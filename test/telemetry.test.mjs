@@ -3,9 +3,9 @@ import { describe, it } from 'node:test'
 import { COLLECT_FIELDS, runWithTelemetry, scanFields } from '../src/lib/telemetry.mjs'
 
 function setup({ runError, setupError, afterError, cleanupError } = {}) {
-  const calls = { notices: [], cleaned: 0, loaded: 0, options: undefined, runs: [] }
+  const calls = { notices: [], cleaned: 0, loaded: 0, options: undefined, runs: [], sets: [] }
   const handle = {
-    set() {},
+    set(fields) { calls.sets.push(fields) },
     async run(command, work, options) {
       calls.runs.push({ command, options })
       if (runError) throw runError
@@ -130,6 +130,21 @@ describe('runWithTelemetry', () => {
     assert.equal(captured.message, 'Action execution failed')
     assert.equal(calls.cleaned, 1)
     assert.deepEqual(calls.notices, [])
+  })
+
+  it('reports the stage a work error came from', async () => {
+    const { calls, options } = setup()
+    const error = new Error('git checkout failed')
+    error.stage = 'baseline'
+    await assert.rejects(runWithTelemetry(inputs, async () => { throw error }, options), actual => actual === error)
+    assert.deepEqual(calls.sets, [{ errorStage: 'baseline' }])
+  })
+
+  it('reports an unknown stage when the work error carries none', async () => {
+    const { calls, options } = setup()
+    const error = new Error('something broke')
+    await assert.rejects(runWithTelemetry(inputs, async () => { throw error }, options), actual => actual === error)
+    assert.deepEqual(calls.sets, [{ errorStage: 'unknown' }])
   })
 })
 

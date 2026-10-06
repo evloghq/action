@@ -18,6 +18,9 @@ const log = message => process.stderr.write(`${message}\n`)
 const notice = message => process.stdout.write(`::notice title=evlog::${message}\n`)
 const fail = message => process.stdout.write(`::error title=evlog::${message}\n`)
 
+/** Stamp the stage an error came from, for telemetry's errorStage field. */
+const tag = (stage, error) => Object.assign(error, { stage })
+
 /** Why a package failed its gate, read off the JSON the CLI printed. */
 function reasons(json, minScore) {
   const out = []
@@ -48,15 +51,25 @@ async function main(inputs, telemetry) {
   const root = resolve(event.workspace, inputs.workingDirectory)
 
   const packages = inputs.packages.length > 0 ? expandPackages(inputs.packages, root) : [{ dir: root, name: '.' }]
-  if (packages.length === 0) throw new InputError(`\`packages\` matched nothing under ${inputs.workingDirectory}`)
+  if (packages.length === 0) throw tag('inputs', new InputError(`\`packages\` matched nothing under ${inputs.workingDirectory}`))
   for (const pkg of packages) {
-    if (!isPackage(pkg.dir)) throw new InputError(`${pkg.name} has no package.json`)
+    if (!isPackage(pkg.dir)) throw tag('inputs', new InputError(`${pkg.name} has no package.json`))
   }
   log(`evlog: ${packages.length} package${packages.length === 1 ? '' : 's'} · ${spec}`)
 
-  const baseline = resolveBaseline(inputs.baseline, event)
+  let baseline
+  try {
+    baseline = resolveBaseline(inputs.baseline, event)
+  } catch (error) {
+    throw tag('inputs', error)
+  }
   telemetry?.set({ packages: packages.length, baselineMode: baseline.mode })
-  const base = baseline.mode === 'base' ? checkoutBase({ workspace: root, ref: baseline.ref, log }) : undefined
+  let base
+  try {
+    base = baseline.mode === 'base' ? checkoutBase({ workspace: root, ref: baseline.ref, log }) : undefined
+  } catch (error) {
+    throw tag('baseline', error)
+  }
   const baselineRef = baseline.mode === 'base' ? baseline.ref : baseline.mode === 'spec' ? baseline.spec : undefined
 
   const results = []
@@ -94,6 +107,8 @@ async function main(inputs, telemetry) {
       })
       log(`evlog: ${pkg.name === '.' ? json.map.projectName : pkg.name} · ${packageLine(results.at(-1), { baselineRef })}`)
     }
+  } catch (error) {
+    throw tag('cli', error)
   } finally {
     base?.cleanup()
   }
@@ -106,16 +121,21 @@ async function main(inputs, telemetry) {
   if (inputs.summary && event.summaryFile) appendFileSync(event.summaryFile, `${renderSummary(results, context)}\n`)
 
   if (inputs.annotations) {
-    const outcome = await createCheckRun({
-      event,
-      token: inputs.token,
-      name: CHECK_NAME,
-      headSha: event.pullRequest?.headSha ?? event.sha,
-      conclusion: outputs.passed ? 'success' : inputs.gate ? 'failure' : 'neutral',
-      title: plain(`${outputs.score} · ${verdict(results, context)}`),
-      summary: report,
-      annotations: results.flatMap(result => findings(result, { baselineRef })),
-    })
+    let outcome
+    try {
+      outcome = await createCheckRun({
+        event,
+        token: inputs.token,
+        name: CHECK_NAME,
+        headSha: event.pullRequest?.headSha ?? event.sha,
+        conclusion: outputs.passed ? 'success' : inputs.gate ? 'failure' : 'neutral',
+        title: plain(`${outputs.score} · ${verdict(results, context)}`),
+        summary: report,
+        annotations: results.flatMap(result => findings(result, { baselineRef })),
+      })
+    } catch (error) {
+      throw tag('check', error)
+    }
     telemetry?.set({ checkOutcome: outcome.outcome })
     if (outcome.outcome === 'created') log(`evlog: check run ${outcome.url} · ${outcome.annotations} annotation${outcome.annotations === 1 ? '' : 's'}`)
     else {
@@ -127,7 +147,12 @@ async function main(inputs, telemetry) {
 
   if (inputs.comment !== 'never' && event.pullRequest) {
     const create = inputs.comment === 'always' || !outputs.passed
-    const outcome = await upsertComment({ event, token: inputs.token, key: inputs.commentKey, body: report, create })
+    let outcome
+    try {
+      outcome = await upsertComment({ event, token: inputs.token, key: inputs.commentKey, body: report, create })
+    } catch (error) {
+      throw tag('comment', error)
+    }
     telemetry?.set({ commentOutcome: outcome.outcome })
     if (outcome.outcome === 'skipped') notice(`pull request comment skipped: ${outcome.reason}`)
     else if (outcome.outcome === 'failed') fail(`pull request comment ${outcome.reason}`)
