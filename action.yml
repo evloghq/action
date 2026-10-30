@@ -15,7 +15,7 @@ inputs:
     # changes what a user's gate sees.
     description: '`@evlog/cli` version to run, or a full package spec (a pkg.pr.new URL). Defaults to the release this action was tested with; `latest` follows npm.'
     # renovate: datasource=npm depName=@evlog/cli
-    default: 0.8.0
+    default: 0.11.1
   working-directory:
     description: Directory of the project to scan, relative to the workspace.
     default: .
