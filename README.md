@@ -48,6 +48,7 @@ The judgment is the CLI's. The action adds no rule of its own, so `npx evlog map
 | `summary` | `true` | Write the report to the job summary. |
 | `comment` | `true` | `true` posts one comment and keeps it updated; `on-failure` only posts when the gate failed, and updates an existing comment either way; `false` posts nothing. Needs `pull-requests: write`; skipped with a notice when the token cannot write (forks). |
 | `comment-key` | `default` | Keeps separate comments when the action runs more than once on a pull request. |
+| `cards-url` | | URL of an evlog cloud app that draws the report as image cards in the comment. Needs `id-token: write`. Preview. |
 | `telemetry` | `true` | Send action health and scan counters. `false` disables telemetry for both the action and its CLI scans. |
 | `token` | `${{ github.token }}` | Token for the check run and the comment. |
 
@@ -61,6 +62,7 @@ The judgment is the CLI's. The action adds no rule of its own, so `npx evlog map
 | `instrumented`, `partial`, `dark` | Entry point counts, every package together. |
 | `passed` | `true` when every package met the gate, whatever `gate` is set to. |
 | `results` | JSON, one entry per package: `name`, `framework`, `score`, `status`, `reasons`, `summary`, `delta`, `regressions`, `fixed`. |
+| `cards-url` | The run page on the `cards-url` app, empty when no cards were drawn. |
 
 ## Recipes
 
@@ -125,6 +127,22 @@ The comment is posted with the workflow's token, so it shows as `github-actions`
         with:
           token: ${{ steps.app.outputs.token }}
 ```
+
+### Report cards (preview)
+
+```yaml
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+  id-token: write
+# ...
+      - uses: evloghq/action@v1
+        with:
+          cards-url: https://evlog-cloud.vercel.app
+```
+
+The action posts the run to the app, which stores it with the base branch's score history and answers with an image card. The comment opens on it: the gate, the score and how it moved, the base branch's score commit by commit and where the pull request lands, then the entry points the pull request changed, with the `log.set()` fields and `log.audit()` actions each one loses or gains. Below it, the comment keeps the gate alert with links into the diff, the wide event diff as text, and every entry point against every check, both folded. The wide event needs an `@evlog/cli` that writes the `event` key. The OIDC token proves the repository to the app, so there is no secret to create. If the app is down or refuses the run, the comment goes out without cards and a notice says why. `https://evlog-cloud.vercel.app` is a proof of concept deployment and may move.
 
 ## Frameworks
 

@@ -26,6 +26,13 @@ function integer(name, raw, { min, max }) {
   return value
 }
 
+function url(name, raw) {
+  const value = raw.trim()
+  if (value === '') return undefined
+  if (!/^https?:\/\/[^\s/]+/.test(value)) throw new InputError(`Input \`${name}\` must be an http(s) URL, got "${raw}"`)
+  return value
+}
+
 function commentMode(raw) {
   const mode = COMMENT_MODES[raw.trim().toLowerCase() || 'true']
   if (!mode) throw new InputError(`Input \`comment\` must be true, false or on-failure, got "${raw}"`)
@@ -71,6 +78,7 @@ export function readInputs(env = process.env) {
     summary: bool('summary', get('SUMMARY') || 'true'),
     comment: commentMode(get('COMMENT')),
     commentKey: get('COMMENT_KEY').trim() || 'default',
+    cardsUrl: url('cards-url', get('CARDS_URL')),
     token: get('TOKEN'),
   }
 }

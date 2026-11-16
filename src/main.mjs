@@ -1,6 +1,7 @@
 import { appendFileSync } from 'node:fs'
 import { relative, resolve } from 'node:path'
 import { baselineFor, checkoutBase } from './lib/baseline.mjs'
+import { publishCards, runPayload } from './lib/cards.mjs'
 import { createCheckRun } from './lib/checks.mjs'
 import { gateArgs, packageSpec, runMap } from './lib/cli.mjs'
 import { upsertComment } from './lib/comment.mjs'
@@ -102,6 +103,7 @@ async function main(inputs, telemetry) {
         summary: json.summary,
         baseline: json.baseline,
         baselineRoutes: scanned ? Object.fromEntries(scanned.map.routes.map(route => [route.id, route.score])) : undefined,
+        baselineEvents: scanned ? Object.fromEntries(scanned.map.routes.map(route => [route.id, route.event])) : undefined,
         status: scan.status === 0 ? 'passed' : 'failed',
         reasons: failed,
       })
@@ -117,6 +119,14 @@ async function main(inputs, telemetry) {
   telemetry?.set(scanFields(outputs))
   telemetry?.set({ checkOutcome: 'disabled', commentOutcome: 'disabled' })
   const context = { ...event, cliVersion, baselineRef, minScore: inputs.minScore, gate: inputs.gate }
+  if (inputs.cardsUrl) {
+    const cards = await publishCards({ endpoint: inputs.cardsUrl, payload: runPayload(results, context) })
+    if (cards.outcome === 'created') {
+      context.cards = cards
+      log(`evlog: cards ${cards.url}`)
+    } else notice(`report cards skipped: ${cards.reason}`)
+  }
+  outputs['cards-url'] = context.cards?.url ?? ''
   const report = renderReport(results, context)
   if (inputs.summary && event.summaryFile) appendFileSync(event.summaryFile, `${renderSummary(results, context)}\n`)
 

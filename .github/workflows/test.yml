@@ -145,6 +145,37 @@ jobs:
           echo "$OUTPUTS" | jq -e '.results | fromjson | all(has("delta"))'
 
 
+
+  cards:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - id: map
+        continue-on-error: true
+        uses: ./
+        with:
+          packages: |
+            test/fixtures/*
+          # The preview of evloghq/evlog#1075, which writes the `event` key the
+          # card reads. Back to the default once a release carries it.
+          version: https://pkg.pr.new/@evlog/cli@1075
+          cards-url: https://evlog-cloud.vercel.app
+          comment: true
+          comment-key: cards
+          annotations: false
+      - name: The app stored the run and the comment links to it
+        env:
+          CARDS_URL: ${{ steps.map.outputs.cards-url }}
+        run: |
+          echo "$CARDS_URL"
+          case "$CARDS_URL" in https://evlog-cloud.vercel.app/r/*) ;; *) exit 1 ;; esac
+          curl -fsS -o /dev/null -w '%{content_type}\n' "$CARDS_URL/report.svg" | grep -q 'image/svg+xml'
+
   telemetry:
     runs-on: ubuntu-latest
     steps:

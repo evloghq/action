@@ -14,6 +14,7 @@ export function readEvent(env = process.env) {
     serverUrl: env.GITHUB_SERVER_URL ?? 'https://github.com',
     workspace: env.GITHUB_WORKSPACE ?? process.cwd(),
     sha: env.GITHUB_SHA ?? '',
+    refName: env.GITHUB_REF_NAME ?? '',
     runId: env.GITHUB_RUN_ID ?? '',
     outputFile: env.GITHUB_OUTPUT,
     summaryFile: env.GITHUB_STEP_SUMMARY,

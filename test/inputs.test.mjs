@@ -21,6 +21,7 @@ describe('readInputs', () => {
       summary: true,
       comment: 'always',
       commentKey: 'default',
+      cardsUrl: undefined,
       token: 't',
     })
   })
@@ -52,6 +53,11 @@ describe('readInputs', () => {
   it('reads and validates the telemetry opt-out', () => {
     assert.equal(readInputs(env({ INPUT_TELEMETRY: 'false' })).telemetry, false)
     assert.throws(() => readInputs(env({ INPUT_TELEMETRY: 'yes' })), /`telemetry` must be true or false/)
+  })
+
+  it('reads the cards URL and rejects anything else', () => {
+    assert.equal(readInputs(env({ INPUT_CARDS_URL: ' https://evlog.cloud ' })).cardsUrl, 'https://evlog.cloud')
+    assert.throws(() => readInputs(env({ INPUT_CARDS_URL: 'evlog.cloud' })), /`cards-url` must be an http\(s\) URL/)
   })
 
   it('rejects a boolean that is neither true nor false', () => {
