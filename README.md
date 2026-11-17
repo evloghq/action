@@ -37,7 +37,7 @@ The judgment is the CLI's. The action adds no rule of its own, so `npx evlog map
 
 | Input | Default | What it does |
 | --- | --- | --- |
-| `version` | `0.8.0` | `@evlog/cli` version to run, or a full spec. Defaults to the release this action was tested with; `latest` follows npm. |
+| `version` | `1.0.0-beta.2` | `@evlog/cli` version to run, or a full spec. Defaults to the release this action was tested with; `latest` follows npm. |
 | `working-directory` | `.` | Project to scan, relative to the workspace. |
 | `packages` | | One directory or glob per line (`apps/*`), each scanned as its own package. |
 | `baseline` | `auto` | `auto` scans the pull request base and compares against it. A path or `git:<ref>` is passed to the CLI. `none` disables the comparison. |
