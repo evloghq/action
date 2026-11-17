@@ -152,4 +152,13 @@ describe('renderSummary', () => {
     assert.match(rows[0], /^\| `POST \/pay` \[`src\/x\.ts:1`\]\([^)]+\) \| 40 \| -20 \| ✓ \| ✗ \| silenced \|$/)
     assert.match(rows[1], /^\| `GET \/users` .* \| 100 \| 0 \| ✓ \| ✓ \| – \|$/)
   })
+
+  it('adds a column for a check the map carries that the action does not list, after the known ones', () => {
+    const r = result({
+      routes: [route('/users', { checks: { 'trace-propagation': 'fail', 'context': 'pass', 'wide-event': 'pass' } })],
+    })
+    const md = renderSummary([r], context)
+    assert.match(md, /\| Entry point \| Score \| wide-event \| context \| trace-propagation \|\n/)
+    assert.match(md, /\| `GET \/users` .* \| 100 \| ✓ \| ✓ \| ✗ \|$/m)
+  })
 })

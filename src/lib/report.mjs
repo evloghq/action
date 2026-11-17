@@ -11,7 +11,7 @@ import { createHash } from 'node:crypto'
 
 const DOCS = 'https://evlog.dev'
 
-/* Column order of the per-entry-point table, the CLI's. */
+/* Column order of the per-entry-point table, the CLI's. A check the map carries that is not listed here follows them. */
 const CHECKS = ['wide-event', 'context', 'audit', 'structured-errors', 'error-handling', 'page-error-handling', 'error-catalog', 'audit-coverage', 'ai-logging', 'auth-identity']
 
 export function grade(score) {
@@ -206,7 +206,9 @@ const CELL = { 'pass': '✓', 'fail': '✗', 'n/a': '–' }
 export function renderSummary(results, context) {
   const lines = [renderReport(results, context)]
   for (const result of results) {
-    const checks = CHECKS.filter(check => result.routes.some(route => route.checks[check] && (route.checks[check].status !== 'n/a' || route.checks[check].suppressed)))
+    const ids = new Set(result.routes.flatMap(route => Object.keys(route.checks)))
+    const checks = [...CHECKS, ...[...ids].filter(check => !CHECKS.includes(check))]
+      .filter(check => result.routes.some(route => route.checks[check] && (route.checks[check].status !== 'n/a' || route.checks[check].suppressed)))
     const name = result.name === '.' ? result.projectName : result.name
     const hasBaseline = Boolean(result.baselineRoutes)
     lines.push('', `<details open><summary>${code(name)} · ${plural(result.routes.length, 'entry point')}</summary>`, '')
