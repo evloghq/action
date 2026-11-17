@@ -34,13 +34,14 @@ export function checkoutBase({ workspace, ref, log }) {
  * nothing to regress from.
  *
  * The map itself comes back too: the report needs the base's score per entry
- * point, which the CLI's comparison does not carry.
+ * point, which the CLI's comparison does not carry. `bin` is the CLI the
+ * package installed, from {@link projectCli}, so both sides run one version.
  */
-export function baselineFor({ base, packageDir, version, env }) {
+export function baselineFor({ base, packageDir, version, bin, env }) {
   const packageRel = toPosix(relative(base.root, packageDir))
   const baseDir = resolve(base.dir, packageRel)
   if (!existsSync(join(baseDir, 'package.json'))) return undefined
-  const { stdout, status } = runMap({ spec: packageSpec(version), cwd: baseDir, args: ['--json'], env })
+  const { stdout, status } = runMap({ spec: packageSpec(version), bin, cwd: baseDir, args: ['--json'], env })
   if (status !== 0 && !stdout) return undefined
   const { map } = JSON.parse(stdout)
   const file = join(base.dir, `.evlog-baseline-${packageRel.replace(/[^\w.-]+/g, '_') || 'root'}.json`)

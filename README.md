@@ -97,6 +97,8 @@ Each action release pins the `@evlog/cli` it was tested with, so `@v1` is determ
           version: latest
 ```
 
+A project that installs `@evlog/cli` itself runs that version instead: from 0.10, the CLI hands off to the copy a project installed, once the workflow has installed dependencies. The base branch of a pull request is then scanned with the same install, so both sides of the comparison run one version.
+
 ### Run on pushes too
 
 On a push there is no base to compare against, so `baseline: auto` turns the comparison off and the run reports. Pass `baseline: git:origin/main` to compare against a committed `evlog.map.json` instead.

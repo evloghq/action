@@ -2,7 +2,7 @@ import { appendFileSync } from 'node:fs'
 import { relative, resolve } from 'node:path'
 import { baselineFor, checkoutBase } from './lib/baseline.mjs'
 import { createCheckRun } from './lib/checks.mjs'
-import { gateArgs, packageSpec, runMap } from './lib/cli.mjs'
+import { gateArgs, packageSpec, projectCli, runMap } from './lib/cli.mjs'
 import { upsertComment } from './lib/comment.mjs'
 import { readEvent } from './lib/event.mjs'
 import { findings, workflowCommand } from './lib/findings.mjs'
@@ -76,7 +76,9 @@ async function main(inputs, telemetry) {
   let cliVersion
   try {
     for (const pkg of packages) {
-      const scanned = base ? baselineFor({ base, packageDir: pkg.dir, version: inputs.version }) : undefined
+      const installed = base ? projectCli({ spec, cwd: pkg.dir }) : undefined
+      if (installed) log(`baseline: ${pkg.name} runs its own @evlog/cli ${installed.version}, so the base is scanned with it too`)
+      const scanned = base ? baselineFor({ base, packageDir: pkg.dir, version: inputs.version, bin: installed?.bin }) : undefined
       const baselineArg = baseline.mode === 'spec' ? baseline.spec : scanned?.file
       const args = gateArgs({ minScore: inputs.minScore, baseline: baselineArg })
 
